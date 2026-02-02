@@ -15,7 +15,7 @@ const columnDefs = [
     { id: 'startDate', label: 'Start Date', type: 'date', editable: true },
     { id: 'targetDate', label: 'Target Date', type: 'date', editable: true },
     { id: 'state', label: 'State', type: 'text', editable: true },
-    { id: 'dependency', label: 'Dependency', type: 'text', editable: true },
+    { id: 'dependencia', label: 'dependencia', type: 'text', editable: true },
     { id: 'priority', label: 'Priority', type: 'number', editable: true },
     { id: 'areaPath', label: 'Area Path', type: 'text', editable: true },
     { id: 'epicType', label: 'Epic Type', type: 'text', editable: true },
@@ -38,7 +38,7 @@ const initialFormData = {
     targetDate: '',
     areaPath: 'ascconecta\\Simonetti',
     priority: '2',
-    dependency: '',
+    dependencia: '',
     epicType: 'Projeto',
     recorrencia: 'Não',
     setor: '',
@@ -118,7 +118,7 @@ const App = () => {
             startDate: formData.type === 'Feature' ? '' : formData.startDate,
             targetDate: formData.type === 'Feature' ? '' : formData.targetDate,
             state: 'New',
-            dependency: formData.dependency,
+            dependencia: formData.dependencia,
             priority: formData.priority,
             areaPath: formData.areaPath,
             epicType: formData.type === 'Epic' ? formData.epicType : '',
@@ -142,7 +142,7 @@ const App = () => {
 
     const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
     
-    const renderDependencyOptions = () => {
+    const renderdependenciaOptions = () => {
         let options = [<option key="" value="">Sem dependência</option>];
         let label = "Dependência";
 
@@ -150,14 +150,14 @@ const App = () => {
             label = "Dependência (Features)";
             db.filter(i => i.type === 'Feature' && i.title2)
               .forEach(f => options.push(<option key={f.id} value={f.title2}>{f.title2}</option>));
-            return <><label>{label}</label><select id="dependency" value={formData.dependency} onChange={handleInputChange}>{options}</select></>;
+            return <><label>{label}</label><select id="dependencia" value={formData.dependencia} onChange={handleInputChange}>{options}</select></>;
         } else if (formData.type === 'Feature') {
             label = "Dependência (Epics)";
             db.filter(i => i.type === 'Epic' && i.title1)
               .forEach(e => options.push(<option key={e.id} value={e.title1}>{e.title1}</option>));
-            return <><label>{label}</label><select id="dependency" value={formData.dependency} onChange={handleInputChange}>{options}</select></>;
+            return <><label>{label}</label><select id="dependencia" value={formData.dependencia} onChange={handleInputChange}>{options}</select></>;
         } else {
-            return <><label>{label}</label><input type="text" id="dependency" value={formData.dependency} onChange={handleInputChange} placeholder="ID ou Título do Pai"/></>;
+            return <><label>{label}</label><input type="text" id="dependencia" value={formData.dependencia} onChange={handleInputChange} placeholder="ID ou Título do Pai"/></>;
         }
     };
 
@@ -220,25 +220,55 @@ const App = () => {
             showToast('Buffer vazio! Adicione itens antes de exportar.', 'warning');
             return;
         }
-        
+
         const projectName = (db.find(i => i.type === "Epic")?.title1) || "Projeto";
-        const headers = columnDefs
-            .filter(c => c.id !== 'checkbox' && c.id !== 'action')
-            .map(c => `"${c.label}"`)
-            .join(',');
         
-        const rows = db.map(item =>
-            columnDefs
-                .filter(c => c.id !== 'checkbox' && c.id !== 'action')
-                .map(col => `"${(item[col.id] || '').toString().replace(/"/g, '""')}"`)
-                .join(',')
-        ).join('\n');
-        
-        const csv = "\uFEFF" + headers + '\n' + rows;
+        const devopsHeaders = [
+            "ID", "Work Item Type", "Title", "State", "Area Path", "Priority", "Description",
+            "Start Date", "Target Date", "Dependência", "Tipo", "Recorrencia", "Setor", 
+            "Solicitante", "Esforço", "Expertise", "Complexidade", "Consultor", "Bug", "Observação"
+        ];
+
+        const escapeCsvField = (field) => {
+            const stringField = (field === null || field === undefined) ? '' : String(field);
+            if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+                return `"${stringField.replace(/"/g, '""')}"`;
+            }
+            return `"${stringField}"`;
+        };
+
+        const rows = db.map(item => {
+            const title = item.title1 || item.title2 || item.title3 || '';
+            const rowData = {
+                "ID": item.devopsId || '',
+                "Work Item Type": item.type || '',
+                "Title": title,
+                "State": item.state || 'New',
+                "Area Path": item.areaPath || '',
+                "Priority": item.priority || '',
+                "Description": item.description || '',
+                "Start Date": item.startDate || '',
+                "Target Date": item.targetDate || '',
+                "Dependência": item.dependency || '',
+                "Tipo": item.epicType || '',
+                "Recorrencia": item.recorrencia || '',
+                "Setor": item.setor || '',
+                "Solicitante": item.solicitante || '',
+                "Esforço": item.effort || '',
+                "Expertise": item.expertise || '',
+                "Complexidade": item.complexity || '',
+                "Consultor": item.consultant || '',
+                "Bug": item.bug || '',
+                "Observação": item.obs || ''
+            };
+            return devopsHeaders.map(header => escapeCsvField(rowData[header])).join(',');
+        }).join('\n');
+
+        const csv = "\uFEFF" + devopsHeaders.map(h => `"${h}"`).join(',') + '\n' + rows;
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `DevOps_${projectName.replace(/[^a-zA-Z0-9]/gi, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
+        link.download = `DevOps_export_${projectName.replace(/[^a-zA-Z0-9]/gi, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
         link.click();
         showToast('Arquivo exportado com sucesso!', 'success');
     };
@@ -262,35 +292,78 @@ const App = () => {
             const lines = cleanData.split('\n').filter(line => line.trim());
             if (lines.length < 2) throw new Error('CSV precisa de cabeçalho e dados.');
 
-            const delimiter = lines[0].includes(';') ? ';' : ',';
+            const delimiter = ',';
             const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
             const columnMap = Object.fromEntries(headers.map((h, i) => [h, i]));
-            
-            const getValue = (values, name) => (values[columnMap[name]] || '').trim().replace(/^"|"$/g, '');
+
+            const parseCsvLine = (text) => {
+                let result = [];
+                let store = '';
+                let inQuote = false;
+                for (let i = 0; i < text.length; i++) {
+                    const c = text[i];
+                    if (inQuote) {
+                        if (c === '"') {
+                            if (i + 1 < text.length && text[i + 1] === '"') {
+                                store += '"';
+                                i++;
+                            } else {
+                                inQuote = false;
+                            }
+                        } else {
+                            store += c;
+                        }
+                    } else {
+                        if (c === '"') {
+                            inQuote = true;
+                        } else if (c === delimiter) {
+                            result.push(store);
+                            store = '';
+                        } else {
+                            store += c;
+                        }
+                    }
+                }
+                result.push(store);
+                return result;
+            };
+
+            const getValue = (values, name) => (values[columnMap[name]] || '').trim();
 
             const newItems = lines.slice(1).map(line => {
-                const values = line.split(delimiter);
-                if (values.length === 0 || values.every(v => !v.trim())) return null;
+                const values = parseCsvLine(line);
+                if (values.length < 2) return null;
+
+                const type = getValue(values, 'Work Item Type');
+                const title = getValue(values, 'Title');
 
                 const item = {
                     id: generateId(),
-                    devopsId: getValue(values, 'ID DevOps'),
-                    type: getValue(values, 'Work Item Type'),
-                    title1: getValue(values, 'Title 1 (Epic)'),
-                    title2: getValue(values, 'Title 2 (Feature)'),
-                    title3: getValue(values, 'Title 3 (User Story)'),
+                    devopsId: getValue(values, 'ID'),
+                    type: type,
+                    title1: type === 'Epic' ? title : '',
+                    title2: type === 'Feature' ? title : '',
+                    title3: type === 'User Story' ? title : '',
                     state: getValue(values, 'State') || 'New',
-                    areaPath: getValue(values, 'Area Path') || '',
-                    effort: getValue(values, 'Effort') || '',
+                    description: getValue(values, 'Description') || '',
+                    areaPath: getValue(values, 'Area Path') || initialFormData.areaPath,
+                    priority: getValue(values, 'Priority') || initialFormData.priority,
+                    dependencia: getValue(values, 'Dependência') || '',
                     expertise: getValue(values, 'Expertise') || '',
-                    // Preencher outros campos com valores padrão
-                    description: '', startDate: '', targetDate: '', dependency: '', priority: '2',
-                    epicType: '', recorrencia: '', setor: '', solicitante: '', complexity: '', consultant: '', bug: 'Não', obs: ''
+                    effort: getValue(values, 'Esforço') || '',
+                    epicType: type === 'Epic' ? (getValue(values, 'Tipo') || initialFormData.epicType) : '',
+                    recorrencia: type === 'Epic' ? (getValue(values, 'Recorrencia') || initialFormData.recorrencia) : '',
+                    setor: type === 'Epic' ? getValue(values, 'Setor') : '',
+                    solicitante: type === 'Epic' ? getValue(values, 'Solicitante') : '',
+                    complexity: type === 'User Story' ? (getValue(values, 'Complexidade') || initialFormData.complexity) : '',
+                    consultant: type === 'User Story' ? getValue(values, 'Consultor') : '',
+                    bug: type === 'User Story' ? (getValue(values, 'Bug') || 'Não') : '',
+                    obs: type === 'User Story' ? getValue(values, 'Observação') : ''
                 };
-                return (item.type && (item.title1 || item.title2 || item.title3)) ? item : null;
+                return (item.type && title) ? item : null;
             }).filter(Boolean);
 
-            if (newItems.length === 0) throw new Error('Nenhum item válido encontrado.');
+            if (newItems.length === 0) throw new Error('Nenhum item válido encontrado no CSV.');
             
             setDb(prev => [...prev, ...newItems]);
             showToast(`${newItems.length} itens importados com sucesso!`, 'success');
@@ -373,7 +446,7 @@ const App = () => {
                                 <option value="4">4</option>
                             </select>
                         </div>
-                        <div className="form-group">{renderDependencyOptions()}</div>
+                        <div className="form-group">{renderdependenciaOptions()}</div>
                     </div>
 
                     {formData.type === 'Epic' && (
@@ -510,30 +583,29 @@ const App = () => {
                 </div>
             </div>
 
-            {isImportModalOpen && (
-                <div className="modal-overlay">
-                    <div className="modal">
-                        <div className="modal-header">
-                            <h3>Importar Dados do DevOps</h3>
-                            <button className="close-modal" onClick={() => setImportModalOpen(false)}>×</button>
+            {/* Modal de Importação */}
+            <div className={`modal-overlay ${isImportModalOpen ? 'active' : ''}`}>
+                <div className="modal">
+                    <div className="modal-header">
+                        <h3>Importar Dados do DevOps</h3>
+                        <button className="close-modal" onClick={() => setImportModalOpen(false)}>×</button>
+                    </div>
+                    <div className="modal-body">
+                        <div className="form-group">
+                            <label>Cole os dados CSV do DevOps:</label>
+                            <textarea value={importData} onChange={(e) => setImportData(e.target.value)} rows="10" placeholder="Cole aqui..."></textarea>
                         </div>
-                        <div className="modal-body">
-                             <div className="form-group">
-                                <label>Cole os dados CSV do DevOps:</label>
-                                <textarea value={importData} onChange={(e) => setImportData(e.target.value)} rows="10" placeholder="Cole aqui..."></textarea>
-                            </div>
-                            <div className="form-group">
-                                <label>Ou selecione um arquivo CSV:</label>
-                                <input type="file" accept=".csv" ref={fileInputRef} onChange={handleFileSelect} />
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="btn btn-secondary" onClick={() => setImportModalOpen(false)}><span>Cancelar</span></button>
-                            <button className="btn btn-primary" onClick={handleImport}><span>✓ Importar Dados</span></button>
+                        <div className="form-group">
+                            <label>Ou selecione um arquivo CSV:</label>
+                            <input type="file" accept=".csv" ref={fileInputRef} onChange={handleFileSelect} />
                         </div>
                     </div>
+                    <div className="modal-footer">
+                        <button className="btn btn-secondary" onClick={() => setImportModalOpen(false)}><span>Cancelar</span></button>
+                        <button className="btn btn-primary" onClick={handleImport}><span>✓ Importar Dados</span></button>
+                    </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 };
