@@ -436,12 +436,12 @@ const App = () => {
                         <div className="form-group">
                             <label className="required">Time</label>
                             <select value={formData.areaPath.split('\\')[0]} onChange={(e) => handleAreaPathChange('team', e.target.value)}>
-                                <option value="ascconecta">ascconecta</option>
+                                <option value="ProjetosConecta">ProjetosConecta</option>
+                                <option value="ProjetosConsultoria">ProjetosConsultoria</option>
                             </select>
                         </div>
                         <div className="form-group">
-                            <label className="required">ProjetosConsultoria</label>
-                            <label className="required">ProjetosConecta</label>
+                            <label className="required">Cliente</label>
                             <select value={formData.areaPath.split('\\')[1]} onChange={(e) => handleAreaPathChange('client', e.target.value)}>
                                 <option value="ASC">ASC</option>
                                 <option value="Baratela">Baratela</option>
