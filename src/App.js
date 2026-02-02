@@ -142,7 +142,14 @@ const App = () => {
 
     const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
     
-    const renderdependenciaOptions = () => {
+    const handleAreaPathChange = (part, value) => {
+        const currentParts = formData.areaPath.split('\\');
+        const team = part === 'team' ? value : currentParts[0];
+        const client = part === 'client' ? value : currentParts[1];
+        setFormData(prev => ({ ...prev, areaPath: `${team}\\${client}` }));
+    };
+
+    const renderDependencyOptions = () => {
         let options = [<option key="" value="">Sem dependência</option>];
         let label = "Dependência";
 
@@ -427,12 +434,26 @@ const App = () => {
                             </div>
                         </>}
                         <div className="form-group">
-                            <label className="required">Area Path</label>
-                            <select id="areaPath" value={formData.areaPath} onChange={handleInputChange} required>
-                                <option value="ascconecta\Simonetti">ascconecta\Simonetti</option>
-                                <option value="ascconecta\Viminas">ascconecta\Viminas</option>
-                                <option value="ascconecta\Natcofarma">ascconecta\Natcofarma</option>
-                                <option value="ascconecta\Carbom">ascconecta\Carbom</option>
+                            <label className="required">Time</label>
+                            <select value={formData.areaPath.split('\\')[0]} onChange={(e) => handleAreaPathChange('team', e.target.value)}>
+                                <option value="ascconecta">ascconecta</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label className="required">ProjetosConsultoria</label>
+                            <label className="required">ProjetosConecta</label>
+                            <select value={formData.areaPath.split('\\')[1]} onChange={(e) => handleAreaPathChange('client', e.target.value)}>
+                                <option value="ASC">ASC</option>
+                                <option value="Baratela">Baratela</option>
+                                <option value="Carbon">Carbon</option>
+                                <option value="ComproCard">ComproCard</option>
+                                <option value="Monica">Monica</option>
+                                <option value="Natcofarma">Natcofarma</option>
+                                <option value="SerraMed">SerraMed</option>
+                                <option value="Simonetti">Simonetti</option>
+                                <option value="Sinergia">Sinergia</option>
+                                <option value="Soldafer">Soldafer</option>
+                                <option value="Viminas">Viminas</option>
                             </select>
                         </div>
                     </div>
@@ -446,7 +467,7 @@ const App = () => {
                                 <option value="4">4</option>
                             </select>
                         </div>
-                        <div className="form-group">{renderdependenciaOptions()}</div>
+                        <div className="form-group">{renderDependencyOptions()}</div>
                     </div>
 
                     {formData.type === 'Epic' && (
